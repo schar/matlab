@@ -1,5 +1,6 @@
 function varargout = csvimport( fileName, varargin )
 % CSVIMPORT reads the specified CSV file and stores the contents in a cell array or matrix
+% edited by Stijn Goossens to bump less frequent against memory issues
 %
 % The file can contain any combination of text & numeric values. Output data format will vary
 % depending on the exact composition of the file data.
@@ -183,6 +184,7 @@ end
 
 %Read first line and determine number of columns in data
 rowData         = fgetl( fid );
+templine=rowData; % added by goosst
 rowData         = regexp( rowData, p.delimiter, 'split' );
 nCols           = numel( rowData );
 
@@ -229,8 +231,22 @@ if pos == -1
   error( 'csvimport:FileQueryError', 'FTELL on file ''%s'' failed.\nError Message: %s', ...
     fileName, msg );
 end
-data            = fread( fid );
-nLines          = numel( find( data == sprintf( '\n' ) ) ) + 1;
+
+% less memory consuming way to get number of lines
+
+% original: fread gives me a lot of out of memory complaints when reading larger csv files
+% data            = fread( fid);
+% nLines          = numel( find( data == sprintf( '\n' ) ) ) + 1;
+
+%new addition:
+lines=1;
+while ischar(templine)
+    templine = fgetl(fid);
+    lines=lines+1;
+end
+nLines=lines-1;
+
+
 %Reposition file position indicator to beginning of second line
 if fseek( fid, pos, 'bof' ) ~= 0
   msg = ferror( fid );
